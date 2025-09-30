@@ -18,6 +18,7 @@ from cdp import CdpClient
 from web3 import Web3
 import time
 from datetime import datetime
+from eth_account import Account
 
 # Load environment variables
 load_dotenv()
@@ -80,21 +81,74 @@ async def create_new_account(cdp: CdpClient):
 
 async def import_existing_account(cdp: CdpClient):
     """
-    Step 2b: Import an existing Ethereum account
+    Step 2b: Import an existing Ethereum account using a real private key
     """
     print_section("2b. Importing an Existing Account")
     
-    # For demo purposes, we'll create a temporary account and then "import" it
-    # In production, you would import an actual external private key
+    # Try to get private key from environment variable
+    import_private_key = os.getenv('IMPORT_PRIVATE_KEY')
+    
+    if import_private_key:
+        print("🔑 Using private key from IMPORT_PRIVATE_KEY environment variable...")
+        # Remove 0x prefix if present
+        if import_private_key.startswith('0x'):
+            import_private_key = import_private_key[2:]
+        
+        # Calculate expected address from private key
+        try:
+            eth_account = Account.from_key(import_private_key)
+            expected_address = eth_account.address
+            print(f"  - Expected Address: {expected_address}")
+        except Exception as e:
+            print(f"  - Warning: Could not derive address from private key: {str(e)}")
+            expected_address = None
+    else:
+        print("📝 No IMPORT_PRIVATE_KEY found in environment, generating temporary key...")
+        print("  - To import your own key, add IMPORT_PRIVATE_KEY=your_private_key to .env")
+        
+        # Generate a new private key for demonstration
+        eth_account = Account.create()
+        import_private_key = eth_account.key.hex()
+        expected_address = eth_account.address
+        
+        print(f"  - Generated Address: {expected_address}")
+    
+    print(f"  - Private Key: {import_private_key[:10]}...{import_private_key[-10:]} (truncated for security)")
+    
+    # Import the account using the private key
+    print("\n🔐 Importing account into CDP...")
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    temp_account = await cdp.evm.create_account(name=f"demo-account-import-{timestamp}")
     
-    print(f"✓ Account imported successfully!")
-    print(f"  - Address: {temp_account.address}")
-    print(f"  - Name: demo-account-import")
-    print(f"  - Note: In production, import external private keys using cdp.evm.import_account()")
-    
-    return temp_account
+    try:
+        imported_account = await cdp.evm.import_account(
+            private_key=import_private_key,
+            name=f"imported-account-{timestamp}"
+        )
+        
+        print(f"\n✓ Account imported successfully!")
+        print(f"  - Imported Address: {imported_account.address}")
+        print(f"  - Account Name: imported-account-{timestamp}")
+        
+        if expected_address:
+            match = imported_account.address.lower() == expected_address.lower()
+            print(f"  - Address Match: {'✓ Yes' if match else '✗ No'}")
+        
+        print("\n💡 Import Process:")
+        print("  1. Private key was provided (from env or generated)")
+        print("  2. CDP encrypted and stored the private key securely in TEE")
+        print("  3. Account is now accessible via CDP SDK")
+        print("  4. Original private key should be securely stored as backup")
+        
+        return imported_account
+        
+    except Exception as e:
+        print(f"\n⚠ Import failed: {str(e)}")
+        print("  - This may happen if the account was already imported")
+        print("  - Falling back to creating a new account for demo purposes")
+        
+        # Fallback: create a new account
+        fallback_account = await cdp.evm.create_account(name=f"fallback-account-{timestamp}")
+        return fallback_account
 
 
 async def fund_account_from_faucet(cdp: CdpClient, address: str):

@@ -33,6 +33,10 @@ pip install -r requirements.txt
 CDP_API_KEY_ID=your_api_key_id_here
 CDP_API_KEY_SECRET=your_api_key_secret_here
 CDP_WALLET_SECRET=your_wallet_secret_here
+
+# Optional: Provide your own private key to import (without 0x prefix)
+# If not provided, a temporary key will be generated for demonstration
+IMPORT_PRIVATE_KEY=your_private_key_here
 ```
 
 ## Getting CDP Credentials
@@ -60,7 +64,8 @@ The application will execute all demonstrations in sequence:
 
 ### 2. Account Creation & Import
 - Creates a new Ethereum account
-- Demonstrates importing an existing account
+- **Imports a real private key** (from `IMPORT_PRIVATE_KEY` env variable or generates one)
+- Verifies imported address matches expected address
 - Shows account addresses and metadata
 
 ### 3. Transactions & Balances
