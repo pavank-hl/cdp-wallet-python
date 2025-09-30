@@ -212,14 +212,3 @@ user_op = await cdp.evm.send_user_operation(
 ## License
 
 This demo is provided as-is for educational purposes.
-
-## Support
-
-For questions or issues:
-- Check the [CDP Documentation](https://docs.cdp.coinbase.com)
-- Join the [CDP Discord](https://discord.gg/cdp)
-- Open an issue in this repository
-
----
-
-Built with ❤️ using [Coinbase Developer Platform](https://www.coinbase.com/cloud)
